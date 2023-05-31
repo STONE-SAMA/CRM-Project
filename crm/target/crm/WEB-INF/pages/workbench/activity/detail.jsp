@@ -43,16 +43,143 @@ String basePath = request.getScheme() + "://" + request.getServerName() + ":" + 
 			$(this).children("div").children("div").show();
 		});
 
-		$(".remarkDiv").mouseout(function(){
+		// $(".remarkDiv").mouseout(function(){
+		// 	$(this).children("div").children("div").hide();
+		// });
+
+		$("#remarkDivList").on("mouseout",".remarkDiv",function () {
 			$(this).children("div").children("div").hide();
 		});
 
-		$(".myHref").mouseover(function(){
-			$(this).children("span").css("color","red");
+
+		// $(".myHref").mouseover(function(){
+		// 	$(this).children("span").css("color","red");
+		// });
+
+		$("#remarkDivList").on("mouseover",".remarkDiv",function () {
+			$(this).children("span").css("color","#f10404");
 		});
 
-		$(".myHref").mouseout(function(){
+		// $(".myHref").mouseout(function(){
+		// 	$(this).children("span").css("color","#E6E6E6");
+		// });
+
+		$("#remarkDivList").on("mouseout",".remarkDiv",function () {
 			$(this).children("span").css("color","#E6E6E6");
+		});
+
+		$("#saveCreateActivityRemarkBtn").click(function () {
+			//收集参数
+			var noteContent=$.trim($("#remark").val());
+			var activityId='${activity.id}';
+			//表单验证
+			if(noteContent==""){
+				alert("备注内容不能为空");
+				return;
+			}
+			$.ajax({
+				url:'workbench/activity/saveCreateActivityRemark.do',
+				data:{
+					noteContent:noteContent,
+					activityId:activityId
+				},
+				type:'post',
+				dataType:'json',
+				success:function (data) {
+					if(data.code=="1"){
+						//清空输入框
+						$("#remark").val("");
+						//刷新备注列表
+						var htmlStr="";
+						htmlStr+="<div id=\"div_"+data.retData.id+"\" class=\"remarkDiv\" style=\"height: 60px;\">";
+						htmlStr+="<img title=\"${sessionScope.sessionUser.name}\" src=\"image/user-thumbnail.png\" style=\"width: 30px; height:30px;\">";
+						htmlStr+="<div style=\"position: relative; top: -40px; left: 40px;\" >";
+						htmlStr+="<h5>"+data.retData.noteContent+"</h5>";
+						htmlStr+="<font color=\"gray\">市场活动</font> <font color=\"gray\">-</font> <b>${activity.name}</b> <small style=\"color: gray;\"> "+data.retData.createTime+" 由${sessionScope.sessionUser.name}创建</small>";
+						htmlStr+="<div style=\"position: relative; left: 500px; top: -30px; height: 30px; width: 100px; display: none;\">";
+						htmlStr+="<a class=\"myHref\" name=\"editA\" remarkId=\""+data.retData.id+"\" href=\"javascript:void(0);\"><span class=\"glyphicon glyphicon-edit\" style=\"font-size: 20px; color: #E6E6E6;\"></span></a>";
+						htmlStr+="&nbsp;&nbsp;&nbsp;&nbsp;";
+						htmlStr+="<a class=\"myHref\" name=\"deleteA\" remarkId=\""+data.retData.id+"\" href=\"javascript:void(0);\"><span class=\"glyphicon glyphicon-remove\" style=\"font-size: 20px; color: #E6E6E6;\"></span></a>";
+						htmlStr+="</div>";
+						htmlStr+="</div>";
+						htmlStr+="</div>";
+						$("#remarkDiv").before(htmlStr);
+					}else{
+						//提示信息
+						alert(data.message);
+					}
+				}
+			});
+		});
+
+		//给删除按钮添加单击事件
+		$("#remarkDivList").on("click","a[name='deleteA']",function () {
+
+			var id = $(this).attr("remarkId");
+			$.ajax({
+				url: 'workbench/activity/deleteActivityRemarkById.do',
+				data: {
+					id:id
+				},
+				type:'post',
+				dataType:'json',
+				success:function (data) {
+					if(data.code=="1"){
+						$("#div_"+id).remove();
+					}else {
+						alert(data.message);
+					}
+				}
+			});
+
+		});
+
+		//给所有市场活动备注后边的"修改"图标添加单击事件
+		$("#remarkDivList").on("click","a[name='editA']",function () {
+			//获取备注的id和noteContent
+			var id=$(this).attr("remarkId");
+			var noteContent=$("#div_"+id+" h5").text();
+			//把备注的id和noteContent写到修改备注的模态窗口中
+			$("#edit-id").val(id);
+			$("#edit-noteContent").val(noteContent);
+			//弹出修改市场活动备注的模态窗口
+			$("#editRemarkModal").modal("show");
+		});
+
+		//给“更新”按钮添加单击事件
+		$("#updateRemarkBtn").click(function () {
+			//收集参数
+			var id=$("#edit-id").val();
+			var noteContent=$.trim($("#edit-noteContent").val());
+			//表单验证
+			if(noteContent==""){
+				alert("备注内容不能为空");
+				return;
+			}
+			//发送请求
+			$.ajax({
+				url:'workbench/activity/updateActivityRemark.do',
+				data:{
+					id:id,
+					noteContent:noteContent
+				},
+				type:'post',
+				dataType:'json',
+				success:function (data) {
+					if(data.code=="1"){
+						//关闭模态窗口
+						$("#editRemarkModal").modal("hide");
+						//刷新备注列表
+						$("#div_"+data.retData.id+" h5").text(data.retData.noteContent);
+						$("#div_"+data.retData.id+" small").text(" "+data.retData.editTime+" 由${sessionScope.sessionUser.name}修改");
+					}else{
+						//提示信息
+						alert(data.message);
+						//模态窗口不关闭
+						$("#editRemarkModal").modal("show");
+					}
+				}
+			});
 		});
 	});
 
@@ -210,7 +337,7 @@ String basePath = request.getScheme() + "://" + request.getServerName() + ":" + 
 				<textarea id="remark" class="form-control" style="width: 850px; resize : none;" rows="2"  placeholder="添加备注..."></textarea>
 				<p id="cancelAndSaveBtn" style="position: relative;left: 737px; top: 10px; display: none;">
 					<button id="cancelBtn" type="button" class="btn btn-default">取消</button>
-					<button type="button" class="btn btn-primary">保存</button>
+					<button type="button" class="btn btn-primary" id="saveCreateActivityRemarkBtn">保存</button>
 				</p>
 			</form>
 		</div>
