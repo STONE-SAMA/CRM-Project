@@ -8,22 +8,206 @@ String basePath = request.getScheme() + "://" + request.getServerName() + ":" + 
 	<base href="<%=basePath%>">
 <meta charset="UTF-8">
 
-<link href="jquery/bootstrap_3.3.0/css/bootstrap.min.css" type="text/css" rel="stylesheet" />
-<link href="jquery/bootstrap-datetimepicker-master/css/bootstrap-datetimepicker.min.css" type="text/css" rel="stylesheet" />
+<link href="jquery/bootstrap_3.3.0/css/bootstrap.min.css" type="text/css" rel="stylesheet"/>
+<link rel="stylesheet" type="text/css"
+	  href="jquery/bootstrap-datetimepicker-master/css/bootstrap-datetimepicker.min.css">
+<link rel="stylesheet" type="text/css" href="jquery/bs_pagination-master/css/jquery.bs_pagination.min.css">
 
 <script type="text/javascript" src="jquery/jquery-1.11.1-min.js"></script>
 <script type="text/javascript" src="jquery/bootstrap_3.3.0/js/bootstrap.min.js"></script>
 <script type="text/javascript" src="jquery/bootstrap-datetimepicker-master/js/bootstrap-datetimepicker.js"></script>
-<script type="text/javascript" src="jquery/bootstrap-datetimepicker-master/locale/bootstrap-datetimepicker.zh-CN.js"></script>
+<script type="text/javascript"
+		src="jquery/bootstrap-datetimepicker-master/locale/bootstrap-datetimepicker.zh-CN.js"></script>
+<script type="text/javascript" src="jquery/bs_pagination-master/js/jquery.bs_pagination.min.js"></script>
+<script type="text/javascript" src="jquery/bs_pagination-master/localization/en.js"></script>
 
 <script type="text/javascript">
 
 	$(function(){
+		// 线索页面加载完成后，查询所有数据第一页以及所有数据的总条数，默认每页显示10条数据
+		queryClueByConditionForPage(1, 10);
 
+		//给"创建"按钮添加单击事件
+		$("#createClueBtn").click(function () {
+			//初始化工作
+			$("#createClueForm")[0].reset();
+			//弹出模态窗口
+			$("#createClueModal").modal("show");
+		});
 
+		//给"保存"按钮添加单击事件
+		$("#saveCreateClueBtn").click(function () {
+			//收集参数
+			var fullname       =$.trim($("#create-fullname").val());
+			var appellation    =$("#create-appellation").val();
+			var owner          =$("#create-owner").val();
+			var company        =$.trim($("#create-company").val());
+			var job            =$.trim($("#create-job").val());
+			var email          =$.trim($("#create-email").val());
+			var phone          =$.trim($("#create-phone").val());
+			var website        =$.trim($("#create-website").val());
+			var mphone         =$.trim($("#create-mphone").val());
+			var state          =$("#create-state").val();
+			var source         =$("#create-source").val();
+			var description    =$.trim($("#create-description").val());
+			var contactSummary =$.trim($("#create-contactSummary").val());
+			var nextContactTime=$.trim($("#create-nextContactTime").val());
+			var address        =$.trim($("#create-address").val());
+			//表单验证
+			//带*非空
+			if (company == "") {
+				alert("公司不能为空");
+				return;
+			}
+			if (fullname == "") {
+				alert("姓名不能为空");
+				return;
+			}
+			//正则表达式验证
+			if (email != "") { // 如果邮箱非空开始验证
+				var emailRegExp = /^\w+([-+.]\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*$/; // 邮件验证正则表达式
+				if (!emailRegExp.test(email)) {
+					alert("邮箱格式错误");
+					return;
+				}
+			}
+			if (phone != "") {
+				var phoneRegExp = /0\d{2,3}-\d{7,8}/; // 国内座机电话号码验证："XXX-XXXXXXX"
+				if (!phoneRegExp.test(phone)) {
+					alert("座机号码格式错误");
+					return;
+				}
+			}
+			if (website != "") {
+				var websiteRegExp = /^(?:(http|https|ftp):\/\/)?((?:[\w-]+\.)+[a-z0-9]+)((?:\/[^/?#]*)+)?(\?[^#]+)?(#.+)?$/i;
+				if (!websiteRegExp.test(website)) {
+					alert("网站格式错误");
+					return;
+				}
+			}
+			if (mphone != "") {
+				var mphoneRegExp = /^(13[0-9]|14[5|7]|15[0|1|2|3|5|6|7|8|9]|18[0|1|2|3|5|6|7|8|9])\d{8}$/;
+				if (!mphoneRegExp.test(mphone)) {
+					alert("手机号码格式错误");
+					return;
+				}
+			}
+			//发送请求
+			$.ajax({
+				url:'workbench/clue/saveCreateClue.do',
+				data:{
+					fullname       :fullname       ,
+					appellation    :appellation    ,
+					owner          :owner          ,
+					company        :company        ,
+					job            :job            ,
+					email          :email          ,
+					phone          :phone          ,
+					website        :website        ,
+					mphone         :mphone         ,
+					state          :state          ,
+					source         :source         ,
+					description    :description    ,
+					contactSummary :contactSummary ,
+					nextContactTime:nextContactTime,
+					address        :address
+				},
+				type:'post',
+				dataType:'json',
+				success:function (data) {
+					if(data.code=="1"){
+						//关闭模态窗口
+						$("#createClueModal").modal("hide");
+						//刷新线索列表，显示第一页数据，保持每页显示条数不变(作业)
+
+					}else{
+						//提示信息
+						alert(data.message);
+						//模态窗口不关闭
+						$("#createClueModal").modal("show");
+					}
+				}
+			});
+		});
 
 	});
+	/**
+	 * 分页查询函数功能：封装参数并发送请求
+	 * @param pageNo 起始页码
+	 * @param pageSize 单页显示数据条数
+	 */
+	function queryClueByConditionForPage(pageNo, pageSize) {
+		// 收集线索前端界面的相关参数（条件查询的一些信息，如果不需要条件查询，就默认null）
+		var fullname = $("#query-name").val();
+		var company = $("#query-company").val();
+		var phone = $("#query-phone").val();
+		var source = $("#query-source option:selected").text(); // 获取下拉框选中的线索来源
+		var owner = $("#query-owner").val();
+		var mphone = $("#query-mphone").val();
+		var state = $("#query-state option:selected").text(); // 获取下拉框选中的线索状态
+		// 前端向后端发送请求
+		$.ajax({
+			url: 'workbench/clue/queryClueByConditionForPage.do',
+			data: {
+				fullname: fullname,
+				company: company,
+				phone: phone,
+				source: source,
+				owner: owner,
+				mphone: mphone,
+				state: state,
+				pageNo: pageNo,
+				pageSize: pageSize
+			},
+			type: 'post',
+			dataType: 'json',
+			success: function (data) {
+				// 显示所有线索，遍历clueList，拼接所有行
+				var htmlString = "";
+				$.each(data.clueList, function (index, obj) {
+					// checkbox中value存放了线索的id属性，用于删除和修改的调用
+					htmlString += "<tr class=\"active\">";
+					htmlString += "<td><input type=\"checkbox\" value=\"" + obj.id + "\"/></td>";
+					htmlString += "<td><a style=\"text-decoration: none; cursor: pointer;\" onclick=\"window.location.href='workbench/clue/detailClue.do?id=" + obj.id + "'\">" + obj.fullname + "" + obj.appellation + "</a></td>";
+					htmlString += "<td>" + obj.company + "</td>";
+					htmlString += "<td>" + obj.phone + "</td>";
+					htmlString += "<td>" + obj.mphone + "</td>";
+					htmlString += "<td>" + obj.source + "</td>";
+					htmlString += "<td>" + obj.owner + "</td>";
+					htmlString += "<td>" + obj.state + "</td>";
+					htmlString += "</tr>";
+				});
+				$("#tBody").html(htmlString); // 写入页面
+				$("#checkAll").prop("checked", false); // 换页时将全选按钮取消选中
+				//计算总页数
+				var totalPages = 1;
+				if (data.totalRows % pageSize == 0) { // 总数据刚好可以整除页面
+					totalPages = data.totalRows / pageSize;
+				} else {
+					totalPages = parseInt(data.totalRows / pageSize) + 1; // 页数不能是小数，将小数转换为整数
+				}
 
+				//对容器调用bs_pagination工具函数，显示翻页信息
+				$("#page-master").bs_pagination({
+					currentPage: pageNo, // 当前页号,相当于pageNo
+					rowsPerPage: pageSize, // 每页显示条数,相当于pageSize
+					totalRows: data.totalRows, // 总条数
+					totalPages: totalPages,  // 总页数,必填参数.
+					visiblePageLinks: 5, // 最多可以显示的卡片数
+					showGoToPage: true, // 是否显示"跳转到"部分，默认true显示
+					showRowsPerPage: true, // 是否显示"每页显示条数"部分，默认true显示
+					showRowsInfo: true, // 是否显示记录的信息，默认true显示
+
+					// 用户每次切换页号，都自动触发本函数;
+					// 每次返回切换页号之后的pageNo和pageSize
+					onChangePage: function (event, pageObj) { // returns page_num and rows_per_page after a link has clicked
+						// 重写发送当前页数和每页显示的条数（这也就意味着每次换页都将向后端 发送请求 查询当页数据）
+						queryClueByConditionForPage(pageObj.currentPage, pageObj.rowsPerPage);
+					}
+				});
+			}
+		});
+	}
 </script>
 </head>
 <body>
@@ -180,7 +364,8 @@ String basePath = request.getScheme() + "://" + request.getServerName() + ":" + 
 			</div>
 			<div class="modal-body">
 				<form class="form-horizontal" role="form">
-
+					<!--设置一个隐藏标签，用来存放id，供后面修改数据时操作-->
+					<input type="hidden" id="edit-id">
 					<div class="form-group">
 						<label for="edit-clueOwner" class="col-sm-2 control-label">所有者<span style="font-size: 15px; color: red;">*</span></label>
 						<div class="col-sm-10" style="width: 300px;">
@@ -308,8 +493,6 @@ String basePath = request.getScheme() + "://" + request.getServerName() + ":" + 
 </div>
 
 
-
-
 <div>
 	<div style="position: relative; left: 10px; top: -10px;">
 		<div class="page-header">
@@ -415,65 +598,66 @@ String basePath = request.getScheme() + "://" + request.getServerName() + ":" + 
 					<td>线索状态</td>
 				</tr>
 				</thead>
-				<tbody>
-				<tr>
-					<td><input type="checkbox" /></td>
-					<td><a style="text-decoration: none; cursor: pointer;" onclick="window.location.href='workbench/clue/detailClue.do?id=a67c52e8702e4a4e89ab47d1751fc78b';">张三教授</a></td>
-					<td>动力节点</td>
-					<td>010-84846003</td>
-					<td>12345678901</td>
-					<td>广告</td>
-					<td>zhangsan</td>
-					<td>已联系</td>
-				</tr>
-				<tr class="active">
-					<td><input type="checkbox" /></td>
-					<td><a style="text-decoration: none; cursor: pointer;" onclick="window.location.href='detail.jsp';">李四先生</a></td>
-					<td>动力节点</td>
-					<td>010-84846003</td>
-					<td>12345678901</td>
-					<td>广告</td>
-					<td>zhangsan</td>
-					<td>已联系</td>
-				</tr>
+				<tbody id="tBody">
+<%--				<tr>--%>
+<%--					<td><input type="checkbox" /></td>--%>
+<%--					<td><a style="text-decoration: none; cursor: pointer;" onclick="window.location.href='workbench/clue/detailClue.do?id=3c3ef3b3c9c34e15826da6a99dfd90f6';">张三教授</a></td>--%>
+<%--					<td>动力节点</td>--%>
+<%--					<td>010-84846003</td>--%>
+<%--					<td>12345678901</td>--%>
+<%--					<td>广告</td>--%>
+<%--					<td>zhangsan</td>--%>
+<%--					<td>已联系</td>--%>
+<%--				</tr>--%>
+<%--				<tr class="active">--%>
+<%--					<td><input type="checkbox" /></td>--%>
+<%--					<td><a style="text-decoration: none; cursor: pointer;" onclick="window.location.href='detail.jsp';">李四先生</a></td>--%>
+<%--					<td>动力节点</td>--%>
+<%--					<td>010-84846003</td>--%>
+<%--					<td>12345678901</td>--%>
+<%--					<td>广告</td>--%>
+<%--					<td>zhangsan</td>--%>
+<%--					<td>已联系</td>--%>
+<%--				</tr>--%>
 				</tbody>
 			</table>
+			<div id="page-master"></div>
 		</div>
 
-		<div style="height: 50px; position: relative;top: 60px;">
-			<div>
-				<button type="button" class="btn btn-default" style="cursor: default;">共<b>50</b>条记录</button>
-			</div>
-			<div class="btn-group" style="position: relative;top: -34px; left: 110px;">
-				<button type="button" class="btn btn-default" style="cursor: default;">显示</button>
-				<div class="btn-group">
-					<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
-						10
-						<span class="caret"></span>
-					</button>
-					<ul class="dropdown-menu" role="menu">
-						<li><a href="#">20</a></li>
-						<li><a href="#">30</a></li>
-					</ul>
-				</div>
-				<button type="button" class="btn btn-default" style="cursor: default;">条/页</button>
-			</div>
-			<div style="position: relative;top: -88px; left: 285px;">
-				<nav>
-					<ul class="pagination">
-						<li class="disabled"><a href="#">首页</a></li>
-						<li class="disabled"><a href="#">上一页</a></li>
-						<li class="active"><a href="#">1</a></li>
-						<li><a href="#">2</a></li>
-						<li><a href="#">3</a></li>
-						<li><a href="#">4</a></li>
-						<li><a href="#">5</a></li>
-						<li><a href="#">下一页</a></li>
-						<li class="disabled"><a href="#">末页</a></li>
-					</ul>
-				</nav>
-			</div>
-		</div>
+<%--		<div style="height: 50px; position: relative;top: 60px;">--%>
+<%--			<div>--%>
+<%--				<button type="button" class="btn btn-default" style="cursor: default;">共<b>50</b>条记录</button>--%>
+<%--			</div>--%>
+<%--			<div class="btn-group" style="position: relative;top: -34px; left: 110px;">--%>
+<%--				<button type="button" class="btn btn-default" style="cursor: default;">显示</button>--%>
+<%--				<div class="btn-group">--%>
+<%--					<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">--%>
+<%--						10--%>
+<%--						<span class="caret"></span>--%>
+<%--					</button>--%>
+<%--					<ul class="dropdown-menu" role="menu">--%>
+<%--						<li><a href="#">20</a></li>--%>
+<%--						<li><a href="#">30</a></li>--%>
+<%--					</ul>--%>
+<%--				</div>--%>
+<%--				<button type="button" class="btn btn-default" style="cursor: default;">条/页</button>--%>
+<%--			</div>--%>
+<%--			<div style="position: relative;top: -88px; left: 285px;">--%>
+<%--				<nav>--%>
+<%--					<ul class="pagination">--%>
+<%--						<li class="disabled"><a href="#">首页</a></li>--%>
+<%--						<li class="disabled"><a href="#">上一页</a></li>--%>
+<%--						<li class="active"><a href="#">1</a></li>--%>
+<%--						<li><a href="#">2</a></li>--%>
+<%--						<li><a href="#">3</a></li>--%>
+<%--						<li><a href="#">4</a></li>--%>
+<%--						<li><a href="#">5</a></li>--%>
+<%--						<li><a href="#">下一页</a></li>--%>
+<%--						<li class="disabled"><a href="#">末页</a></li>--%>
+<%--					</ul>--%>
+<%--				</nav>--%>
+<%--			</div>--%>
+<%--		</div>--%>
 
 	</div>
 
