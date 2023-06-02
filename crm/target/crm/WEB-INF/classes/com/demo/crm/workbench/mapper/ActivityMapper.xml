@@ -354,4 +354,18 @@
             where clue_id=#{clueId}
         )
     </select>
+
+    <select id="selectActivityByFuzzyName" parameterType="string" resultMap="ActivityResultMap">
+        select a.id,a.name,a.start_date,a.end_date,u.name as owner
+        from tbl_activity a
+        join tbl_user u on a.owner=u.id
+        where a.name like '%' #{activityName} '%';
+    </select>
+
+    <select id="selectCountOfActivityGroupByOwner" resultType="com.demo.crm.workbench.domain.FunnelVO">
+        select count(*) as value,u.name as name
+        from tbl_activity a
+        join tbl_user u on a.owner=u.id
+        group by u.name
+    </select>
 </mapper>
