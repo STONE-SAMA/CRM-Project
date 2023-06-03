@@ -133,4 +133,38 @@
             (#{obj.id},#{obj.noteContent},#{obj.createBy},#{obj.createTime},#{obj.editBy},#{obj.editTime},#{obj.editFlag},#{obj.contactsId})
         </foreach>
     </insert>
+
+    <select id="selectContactsRemarkForDetailByContactsId" resultMap="BaseResultMap" parameterType="string">
+        select co.id,co.note_content,u1.name as create_by,co.create_time,u2.name as edit_by,co.edit_time,co.edit_flag
+        from tbl_contacts_remark co
+        join tbl_user u1 on co.create_by=u1.id
+        left join tbl_user u2 on co.edit_by=u2.id
+        where co.contacts_id=#{contactsId}
+    </select>
+
+    <insert id="insertContactsRemark" parameterType="com.demo.crm.workbench.domain.ContactsRemark">
+        insert into
+            tbl_contacts_remark(id, note_content, create_time, create_by, edit_flag, contacts_id)
+        values(#{id},#{noteContent},#{createTime},#{createBy},#{editFlag},#{contactsId})
+    </insert>
+
+    <delete id="deleteContactsRemarkByContactsId" parameterType="string">
+        delete from tbl_contacts_remark
+        where contacts_id in
+        <foreach collection="array" item="id" separator="," open="(" close=")">
+            #{id, jdbcType=VARCHAR}
+        </foreach>
+    </delete>
+
+    <delete id="deleteContactsRemarkById" parameterType="string">
+        delete from tbl_contacts_remark
+        where id=#{id}
+    </delete>
+
+    <update id="updateContactsRemark" parameterType="com.demo.crm.workbench.domain.ContactsRemark">
+        update tbl_contacts_remark
+        set note_content=#{noteContent},edit_time=#{editTime},edit_by=#{editBy},edit_flag=#{editFlag}
+        where id=#{id}
+    </update>
+
 </mapper>

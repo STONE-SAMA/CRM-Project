@@ -209,4 +209,25 @@
         from tbl_customer
         where name=#{customerName}
     </select>
+
+    <select id="selectCustomerById" parameterType="string" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List" />
+        from tbl_customer
+        where id = #{id,jdbcType=CHAR}
+    </select>
+
+    <update id="updateCustomer" parameterType="com.demo.crm.workbench.domain.Customer">
+        update tbl_customer
+        set owner=#{owner}, name=#{name}, website=#{website}, phone=#{phone},edit_by=#{editBy},edit_time=#{editTime},
+            contact_summary=#{contactSummary},next_contact_time=#{nextContactTime}, description=#{description}, address=#{address}
+        where id=#{id}
+    </update>
+
+    <select id="selectCustomerNameByFuzzyName" parameterType="string" resultType="string">
+        select name
+        from tbl_customer
+        where name like '%' #{customerName} '%'
+    </select>
+
 </mapper>

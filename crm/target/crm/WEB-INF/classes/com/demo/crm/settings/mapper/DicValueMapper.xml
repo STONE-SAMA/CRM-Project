@@ -98,4 +98,10 @@
         where type_code=#{typeCode}
         order by order_no asc
     </select>
+
+    <select id="selectDicValueById" parameterType="string" resultMap="BaseResultMap">
+        select <include refid="Base_Column_List" />
+        from tbl_dic_value
+        where id = #{id}
+    </select>
 </mapper>
